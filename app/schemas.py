@@ -21,4 +21,3 @@ class AskResponse(BaseModel):
 class IngestResponse(BaseModel):
     document: str
     chunks_created: int
-

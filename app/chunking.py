@@ -34,4 +34,3 @@ def chunk_text(text: str, page: int, chunk_size: int = 900, overlap: int = 120) 
             break
         start = max(end - overlap, start + 1)
     return chunks
-

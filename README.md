@@ -15,12 +15,12 @@ and an Ollama-hosted language model.
 
 ## Laptop-friendly setup (Windows, 8 GB RAM)
 
-Install Python 3.11, Git, and Ollama. Docker is **not required** for Phase 1.
+Install Python 3.12, Git, and Ollama. Docker is **not required** for Phase 1.
 
 ```powershell
-git clone <your-repository-url>
+git clone https://github.com/Priyanshu270895/evidence-rag.git
 cd evidence-rag
-py -3.11 -m venv .venv
+py -3.12 -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -e ".[dev]"

@@ -13,4 +13,3 @@ def test_chunking_retains_page_and_respects_size():
 def test_overlap_must_be_smaller_than_chunk():
     with pytest.raises(ValueError):
         chunk_text("content", page=1, chunk_size=10, overlap=10)
-

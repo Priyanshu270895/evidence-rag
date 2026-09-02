@@ -1,5 +1,6 @@
 import shutil
 from pathlib import Path
+from typing import Annotated
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
@@ -17,7 +18,7 @@ def health() -> dict[str, str]:
 
 
 @app.post("/documents", response_model=IngestResponse)
-def add_document(file: UploadFile = File(...)) -> IngestResponse:
+def add_document(file: Annotated[UploadFile, File(...)]) -> IngestResponse:
     if file.content_type != "application/pdf" or not file.filename:
         raise HTTPException(status_code=415, detail="Only PDF files are supported")
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
@@ -34,10 +35,12 @@ def ask(payload: AskRequest) -> AskResponse:
     answer = generate_answer(payload.question, evidence)
     citations = [
         Citation(
-            document=row["document"], page=row["page"], chunk_id=row["id"],
-            excerpt=row["text"][:300], score=row["score"],
+            document=row["document"],
+            page=row["page"],
+            chunk_id=row["id"],
+            excerpt=row["text"][:300],
+            score=row["score"],
         )
         for row in evidence
     ]
     return AskResponse(answer=answer, citations=citations)
-

@@ -28,7 +28,10 @@ class ChunkStore:
     def add(self, rows: list[dict]) -> None:
         self.connection.executemany(
             "INSERT OR REPLACE INTO chunks(id, document, page, text, embedding) VALUES(?,?,?,?,?)",
-            [(r["id"], r["document"], r["page"], r["text"], json.dumps(r["embedding"])) for r in rows],
+            [
+                (r["id"], r["document"], r["page"], r["text"], json.dumps(r["embedding"]))
+                for r in rows
+            ],
         )
         self.connection.commit()
 
@@ -50,7 +53,9 @@ class ChunkStore:
         scored = []
         for row in rows:
             vector = np.asarray(json.loads(row["embedding"]), dtype=np.float32)
-            score = float(np.dot(query, vector) / (np.linalg.norm(query) * np.linalg.norm(vector) + 1e-9))
+            score = float(
+                np.dot(query, vector) / (np.linalg.norm(query) * np.linalg.norm(vector) + 1e-9)
+            )
             scored.append((row["id"], score))
         return [item[0] for item in sorted(scored, key=lambda item: item[1], reverse=True)[:limit]]
 
@@ -58,6 +63,7 @@ class ChunkStore:
         if not ids:
             return {}
         marks = ",".join("?" for _ in ids)
-        rows = self.connection.execute(f"SELECT * FROM chunks WHERE id IN ({marks})", ids).fetchall()
+        rows = self.connection.execute(
+            f"SELECT * FROM chunks WHERE id IN ({marks})", ids
+        ).fetchall()
         return {row["id"]: row for row in rows}
-

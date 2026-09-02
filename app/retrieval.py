@@ -7,4 +7,3 @@ def reciprocal_rank_fusion(rankings: list[list[str]], k: int = 60) -> list[tuple
         for rank, item_id in enumerate(ranking, start=1):
             scores[item_id] += 1 / (k + rank)
     return sorted(scores.items(), key=lambda item: (-item[1], item[0]))
-

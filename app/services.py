@@ -27,8 +27,12 @@ def ingest_pdf(path: Path) -> int:
     records = []
     for page_number, page in enumerate(reader.pages, start=1):
         for chunk in chunk_text(page.extract_text() or "", page_number):
-            digest = hashlib.sha256(f"{path.name}:{page_number}:{chunk.index}:{chunk.text}".encode()).hexdigest()[:20]
-            records.append({"id": digest, "document": path.name, "page": page_number, "text": chunk.text})
+            digest = hashlib.sha256(
+                f"{path.name}:{page_number}:{chunk.index}:{chunk.text}".encode()
+            ).hexdigest()[:20]
+            records.append(
+                {"id": digest, "document": path.name, "page": page_number, "text": chunk.text}
+            )
     if not records:
         return 0
     vectors = embedder().encode([r["text"] for r in records], normalize_embeddings=True).tolist()
@@ -73,4 +77,3 @@ Evidence:
         return response.json()["response"].strip()
     except httpx.HTTPError:
         return "Relevant evidence was retrieved, but the local language model is unavailable. Start Ollama and try again."
-

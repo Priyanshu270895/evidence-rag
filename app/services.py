@@ -1,4 +1,5 @@
 import hashlib
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -11,10 +12,25 @@ from app.config import settings
 from app.retrieval import reciprocal_rank_fusion
 from app.store import ChunkStore
 
+SOURCE_CITATION_PATTERN = re.compile(r"\[SOURCE (?P<index>\d+)\]")
+
+
+class EmbeddingModelUnavailableError(RuntimeError):
+    pass
+
 
 @lru_cache
 def embedder() -> SentenceTransformer:
-    return SentenceTransformer(settings.embedding_model)
+    try:
+        return SentenceTransformer(
+            settings.embedding_model,
+            local_files_only=settings.embedding_model_local_files_only,
+        )
+    except (OSError, RuntimeError) as exc:
+        raise EmbeddingModelUnavailableError(
+            "Embedding model is unavailable. Run `python scripts/cache_embedding_model.py` "
+            "from the project virtual environment, then retry."
+        ) from exc
 
 
 @lru_cache
@@ -52,6 +68,20 @@ def retrieve(question: str, limit: int) -> list[dict]:
     return [{**dict(rows[item_id]), "score": score} for item_id, score in fused if item_id in rows]
 
 
+def has_valid_source_citation(answer: str, evidence_count: int) -> bool:
+    for match in SOURCE_CITATION_PATTERN.finditer(answer):
+        if 1 <= int(match.group("index")) <= evidence_count:
+            return True
+    return False
+
+
+def grounded_fallback(evidence: list[dict]) -> str:
+    top = evidence[0]["text"].strip().replace("\n", " ")
+    if len(top) > 500:
+        top = f"{top[:497]}..."
+    return f"The retrieved evidence says: {top} [SOURCE 1]"
+
+
 def generate_answer(question: str, evidence: list[dict]) -> str:
     if not evidence:
         return "I don't have enough evidence in the indexed documents to answer that question."
@@ -59,8 +89,11 @@ def generate_answer(question: str, evidence: list[dict]) -> str:
         f"[SOURCE {index}: {row['document']}, page {row['page']}]\n{row['text']}"
         for index, row in enumerate(evidence, start=1)
     )
-    prompt = f"""Answer only from the supplied evidence. Cite claims using [SOURCE N].
-If the evidence is insufficient, say so clearly. Do not invent facts.
+    prompt = f"""Answer only from the supplied evidence.
+Every factual sentence must cite one supplied source using [SOURCE N].
+If the evidence is insufficient, say so clearly and cite the closest relevant source.
+Do not infer, generalize, or explain beyond the evidence.
+If the evidence is only a short phrase, answer with only that phrase and its citation.
 
 Question: {question}
 
@@ -70,10 +103,18 @@ Evidence:
     try:
         response = httpx.post(
             f"{settings.ollama_base_url}/api/generate",
-            json={"model": settings.ollama_model, "prompt": prompt, "stream": False},
+            json={
+                "model": settings.ollama_model,
+                "prompt": prompt,
+                "stream": False,
+                "options": {"temperature": 0, "num_predict": 256},
+            },
             timeout=120,
         )
         response.raise_for_status()
-        return response.json()["response"].strip()
+        answer = response.json()["response"].strip()
+        if not has_valid_source_citation(answer, len(evidence)):
+            return grounded_fallback(evidence)
+        return answer
     except httpx.HTTPError:
         return "Relevant evidence was retrieved, but the local language model is unavailable. Start Ollama and try again."

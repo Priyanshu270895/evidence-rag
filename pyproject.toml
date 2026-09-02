@@ -12,6 +12,7 @@ dependencies = [
   "sentence-transformers>=3.3,<4",
   "numpy>=1.26,<3",
   "httpx>=0.28,<1",
+  "python-certifi-win32>=1.6,<2; platform_system == 'Windows'",
 ]
 
 [project.optional-dependencies]

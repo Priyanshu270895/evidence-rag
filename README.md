@@ -25,6 +25,7 @@ py -3.12 -m venv .venv
 python -m pip install --upgrade pip
 pip install -e ".[dev]"
 Copy-Item .env.example .env
+python scripts/cache_embedding_model.py
 ollama pull qwen2.5:1.5b
 ollama serve
 ```

@@ -6,7 +6,12 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from app.config import settings
 from app.schemas import AskRequest, AskResponse, Citation, IngestResponse
-from app.services import generate_answer, ingest_pdf, retrieve
+from app.services import (
+    EmbeddingModelUnavailableError,
+    generate_answer,
+    ingest_pdf,
+    retrieve,
+)
 
 app = FastAPI(title="EvidenceRAG", version="0.1.0")
 UPLOAD_DIR = Path("data/uploads")
@@ -25,13 +30,19 @@ def add_document(file: Annotated[UploadFile, File(...)]) -> IngestResponse:
     destination = UPLOAD_DIR / Path(file.filename).name
     with destination.open("wb") as target:
         shutil.copyfileobj(file.file, target)
-    chunks = ingest_pdf(destination)
+    try:
+        chunks = ingest_pdf(destination)
+    except EmbeddingModelUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     return IngestResponse(document=destination.name, chunks_created=chunks)
 
 
 @app.post("/ask", response_model=AskResponse)
 def ask(payload: AskRequest) -> AskResponse:
-    evidence = retrieve(payload.question, settings.top_k)
+    try:
+        evidence = retrieve(payload.question, settings.top_k)
+    except EmbeddingModelUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     answer = generate_answer(payload.question, evidence)
     citations = [
         Citation(

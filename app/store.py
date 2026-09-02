@@ -1,8 +1,11 @@
 import json
+import re
 import sqlite3
 from pathlib import Path
 
 import numpy as np
+
+FTS_TOKEN_PATTERN = re.compile(r"[A-Za-z0-9_]+")
 
 
 class ChunkStore:
@@ -22,12 +25,29 @@ class ChunkStore:
             CREATE TRIGGER IF NOT EXISTS chunks_ai AFTER INSERT ON chunks BEGIN
               INSERT INTO chunks_fts(rowid, id, text) VALUES (new.rowid, new.id, new.text);
             END;
+            CREATE TRIGGER IF NOT EXISTS chunks_ad AFTER DELETE ON chunks BEGIN
+              INSERT INTO chunks_fts(chunks_fts, rowid, id, text)
+              VALUES('delete', old.rowid, old.id, old.text);
+            END;
+            CREATE TRIGGER IF NOT EXISTS chunks_au AFTER UPDATE ON chunks BEGIN
+              INSERT INTO chunks_fts(chunks_fts, rowid, id, text)
+              VALUES('delete', old.rowid, old.id, old.text);
+              INSERT INTO chunks_fts(rowid, id, text) VALUES (new.rowid, new.id, new.text);
+            END;
             """
         )
 
     def add(self, rows: list[dict]) -> None:
         self.connection.executemany(
-            "INSERT OR REPLACE INTO chunks(id, document, page, text, embedding) VALUES(?,?,?,?,?)",
+            """
+            INSERT INTO chunks(id, document, page, text, embedding)
+            VALUES(?,?,?,?,?)
+            ON CONFLICT(id) DO UPDATE SET
+              document = excluded.document,
+              page = excluded.page,
+              text = excluded.text,
+              embedding = excluded.embedding
+            """,
             [
                 (r["id"], r["document"], r["page"], r["text"], json.dumps(r["embedding"]))
                 for r in rows
@@ -36,7 +56,8 @@ class ChunkStore:
         self.connection.commit()
 
     def keyword_search(self, query: str, limit: int) -> list[str]:
-        terms = " OR ".join(token for token in query.replace('"', " ").split() if len(token) > 2)
+        tokens = [token.lower() for token in FTS_TOKEN_PATTERN.findall(query) if len(token) > 2]
+        terms = " OR ".join(f'"{token}"' for token in tokens)
         if not terms:
             return []
         rows = self.connection.execute(

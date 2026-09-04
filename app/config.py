@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
     embedding_model_local_files_only: bool = True
     database_path: Path = Path("data/evidence_rag.db")
+    upload_dir: Path = Path("data/uploads")
+    chunk_size: int = 900
+    chunk_overlap: int = 120
+    max_upload_bytes: int = 25 * 1024 * 1024
     top_k: int = 5
 
 

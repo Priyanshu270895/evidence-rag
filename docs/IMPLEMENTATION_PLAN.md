@@ -4,12 +4,13 @@ EvidenceRAG is a local-first, domain-neutral RAG system for PDFs with page-level
 The goal is to demonstrate production engineering judgment while staying practical on a
 Windows laptop with 8 GB RAM and a GTX 1650.
 
-## Current Phase: Local Reliability
+## Current Phase: Retrieval Evaluation
 
 - Use Python 3.12 in a local virtual environment.
 - Keep the pipeline transparent before adding orchestration frameworks.
 - Validate formatting, linting, tests, app startup, ingestion, retrieval, and generation locally.
 - Avoid committing virtual environments, databases, uploaded PDFs, model weights, caches, or secrets.
+- Use evaluation metrics before adding reranking or query rewriting.
 
 ## Review Findings
 
@@ -24,12 +25,12 @@ Windows laptop with 8 GB RAM and a GTX 1650.
 
 ## Phase 1: Reliable Local RAG
 
-- Add document IDs, metadata, file hashes, and duplicate detection.
-- Add document listing, detail, deletion, and re-indexing endpoints.
-- Fix FTS maintenance for insert, update, and delete paths.
-- Add configurable chunk size and overlap.
-- Add health checks for SQLite, embedding model availability, and Ollama.
-- Expand unit and integration tests.
+- Complete: document IDs, metadata, file hashes, and duplicate detection.
+- Complete: document listing, detail, deletion, re-indexing, and chunk inspection endpoints.
+- Complete: FTS maintenance for insert, update, and delete paths.
+- Complete: configurable chunk size and overlap.
+- Complete: health checks for SQLite and Ollama.
+- Complete: expanded unit and API tests.
 
 ## Phase 2: Retrieval Quality
 

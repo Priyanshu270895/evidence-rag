@@ -5,10 +5,10 @@ from app.services import EmbeddingModelUnavailableError
 
 
 def test_add_document_returns_503_when_embedding_model_is_unavailable(monkeypatch, tmp_path):
-    def fail_ingest(_path):
+    def fail_ingest(*_args, **_kwargs):
         raise EmbeddingModelUnavailableError("Embedding model is unavailable.")
 
-    monkeypatch.setattr(main, "UPLOAD_DIR", tmp_path)
+    monkeypatch.setattr(main.settings, "upload_dir", tmp_path)
     monkeypatch.setattr(main, "ingest_pdf", fail_ingest)
 
     client = TestClient(main.app)
@@ -22,7 +22,7 @@ def test_add_document_returns_503_when_embedding_model_is_unavailable(monkeypatc
 
 
 def test_ask_returns_503_when_embedding_model_is_unavailable(monkeypatch):
-    def fail_retrieve(_question, _limit):
+    def fail_retrieve(*_args, **_kwargs):
         raise EmbeddingModelUnavailableError("Embedding model is unavailable.")
 
     monkeypatch.setattr(main, "retrieve", fail_retrieve)

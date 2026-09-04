@@ -15,12 +15,13 @@ def main() -> None:
     if health:
         st.sidebar.json(health)
 
+    documents = get_json(api_url, "/documents") or []
     left, right = st.columns([0.9, 1.1])
     with left:
         render_upload(api_url)
-        render_documents(api_url)
+        render_documents(api_url, documents)
     with right:
-        render_ask(api_url)
+        render_ask(api_url, documents)
 
 
 def render_upload(api_url: str) -> None:
@@ -40,9 +41,8 @@ def render_upload(api_url: str) -> None:
             st.error(response.text)
 
 
-def render_documents(api_url: str) -> None:
+def render_documents(api_url: str, documents: list[dict]) -> None:
     st.subheader("Documents")
-    documents = get_json(api_url, "/documents") or []
     if not documents:
         st.info("No documents indexed")
         return
@@ -60,13 +60,27 @@ def render_documents(api_url: str) -> None:
                 st.error(response.text)
 
 
-def render_ask(api_url: str) -> None:
+def render_ask(api_url: str, documents: list[dict]) -> None:
     st.subheader("Ask")
+    indexed_documents = [document for document in documents if document["status"] == "indexed"]
+    labels_by_id = {
+        document["document_id"]: f"{document['filename']} ({document['chunk_count']} chunks)"
+        for document in indexed_documents
+    }
+    selected_document_ids = st.multiselect(
+        "Search documents",
+        options=list(labels_by_id),
+        default=list(labels_by_id)[:1],
+        format_func=lambda document_id: labels_by_id[document_id],
+    )
     question = st.text_area("Question", height=120)
     if st.button("Ask", type="primary", disabled=len(question.strip()) < 3):
+        request_body = {"question": question.strip()}
+        if selected_document_ids:
+            request_body["document_ids"] = selected_document_ids
         response = httpx.post(
             f"{api_url}/ask",
-            json={"question": question.strip()},
+            json=request_body,
             timeout=180,
         )
         if not response.is_success:

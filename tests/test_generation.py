@@ -37,7 +37,22 @@ def test_generate_answer_replaces_uncited_model_output_with_grounded_fallback(mo
         [{"document": "sample.pdf", "page": 1, "text": "Dummy PDF file"}],
     )
 
-    assert answer == "The retrieved evidence says: Dummy PDF file [SOURCE 1]"
+    assert answer == "Dummy PDF file [SOURCE 1]"
+
+
+def test_grounded_fallback_cleans_pdf_extraction_noise():
+    answer = services.grounded_fallback(
+        [
+            {
+                "document": "manual.pdf",
+                "page": 1,
+                "text": "Charging\n112\n2\npower sup -\nply must be connected. \uf0b7 Follow warnings.",
+            }
+        ]
+    )
+
+    assert "power supply must be connected." in answer
+    assert "[SOURCE 1]" in answer
 
 
 def test_generate_answer_result_refuses_prompt_injection_question(monkeypatch):

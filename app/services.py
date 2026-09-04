@@ -18,6 +18,7 @@ from app.config import settings
 from app.retrieval import reciprocal_rank_fusion
 from app.safety import (
     CitationCheck,
+    content_tokens,
     detect_prompt_injection,
     evidence_prompt_injection_risk,
     support_score,
@@ -282,11 +283,53 @@ def has_valid_source_citation(answer: str, evidence_count: int) -> bool:
     return validate_source_citations(answer, evidence_count).has_valid_citation
 
 
-def grounded_fallback(evidence: list[dict]) -> str:
-    top = evidence[0]["text"].strip().replace("\n", " ")
+def grounded_fallback(evidence: list[dict], question: str = "") -> str:
+    selected = []
+    seen_sentences = set()
+    for index, row in enumerate(evidence[:3], start=1):
+        sentence = best_evidence_sentence(row["text"], question)
+        sentence_key = sentence.casefold()
+        if sentence and sentence_key not in seen_sentences:
+            selected.append(f"{sentence} [SOURCE {index}]")
+            seen_sentences.add(sentence_key)
+    if selected:
+        return " ".join(selected)
+
+    top = clean_evidence_text(evidence[0]["text"])
     if len(top) > 500:
         top = f"{top[:497]}..."
-    return f"The retrieved evidence says: {top} [SOURCE 1]"
+    return f"{top} [SOURCE 1]"
+
+
+def best_evidence_sentence(text: str, question: str = "") -> str:
+    cleaned = clean_evidence_text(text)
+    sentences = split_sentences(cleaned)
+    if not sentences:
+        return cleaned[:500]
+    complete_sentences = [
+        sentence for sentence in sentences if sentence[:1].isupper() or sentence[:1].isdigit()
+    ]
+    candidates = complete_sentences or sentences
+    question_tokens = content_tokens(question)
+    return max(
+        candidates,
+        key=lambda sentence: (
+            len(content_tokens(sentence) & question_tokens),
+            len(content_tokens(sentence)),
+        ),
+    )[:500]
+
+
+def clean_evidence_text(text: str) -> str:
+    cleaned = text.replace("\uf0b7", " ").replace("\uf0ae", "see")
+    cleaned = re.sub(r"(?<=\w)\s*-\s+(?=\w)", "", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned
+
+
+def split_sentences(text: str) -> list[str]:
+    candidates = re.split(r"(?<=[.!?])\s+", text)
+    return [candidate.strip() for candidate in candidates if len(candidate.strip()) >= 20]
 
 
 def generate_answer(question: str, evidence: list[dict]) -> str:
@@ -331,7 +374,7 @@ def generate_answer_result(question: str, evidence: list[dict]) -> AnswerResult:
             not citation_check.has_valid_citation
             or answer_support_score < settings.grounding_min_support_score
         ):
-            fallback = grounded_fallback(evidence)
+            fallback = grounded_fallback(evidence, question)
             fallback_check = validate_source_citations(fallback, len(evidence))
             fallback_support_score = support_score(fallback, evidence)
             return AnswerResult(

@@ -1,3 +1,5 @@
+import os
+
 import httpx
 import streamlit as st
 
@@ -8,7 +10,7 @@ def main() -> None:
     st.set_page_config(page_title="EvidenceRAG", page_icon="ER", layout="wide")
     st.title("EvidenceRAG")
 
-    api_url = st.sidebar.text_input("API URL", DEFAULT_API_URL).rstrip("/")
+    api_url = st.sidebar.text_input("API URL", configured_api_url()).rstrip("/")
     health = get_json(api_url, "/health")
     if health:
         st.sidebar.json(health)
@@ -92,6 +94,10 @@ def get_json(api_url: str, path: str):
     except httpx.HTTPError:
         return None
     return None
+
+
+def configured_api_url() -> str:
+    return os.getenv("EVIDENCE_RAG_API_URL", DEFAULT_API_URL)
 
 
 if __name__ == "__main__":

@@ -140,12 +140,15 @@ should improve these numbers before they are considered useful.
 The UI is optional:
 
 ```powershell
-pip install -e ".[dev,ui]"
-streamlit run ui/streamlit_app.py
+.\.venv\Scripts\python.exe -m pip install -e ".[dev,ui]"
+.\.venv\Scripts\streamlit.exe run ui\streamlit_app.py
 ```
 
 Keep the FastAPI server running separately. The UI lets you upload PDFs, inspect indexed documents,
 ask questions, and review citations.
+
+Set `EVIDENCE_RAG_API_URL` if the UI should point to a backend that is not running on
+`http://127.0.0.1:8000`.
 
 ## Optional Docker and Qdrant
 
@@ -167,11 +170,28 @@ The local `.env.example` defaults to `VECTOR_BACKEND=sqlite`. Docker Compose set
 `VECTOR_BACKEND=qdrant` so vector search can move from SQLite brute force to Qdrant without changing
 the API contract.
 
+For Qdrant Cloud, install the optional client and set `QDRANT_API_KEY` in your local `.env`. Do not
+commit the real API key.
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -e ".[qdrant]"
+```
+
+```text
+VECTOR_BACKEND=qdrant
+QDRANT_URL=https://your-cluster-url
+QDRANT_API_KEY=your-api-key
+```
+
 ## Azure deployment
 
 See [Azure Deployment Track](docs/AZURE_DEPLOYMENT.md) for the Phase 4 deployment design using
 Azure Container Registry, Azure Container Apps, persistent storage, Qdrant planning, and Ollama
 deployment constraints.
+
+No Azure account is required for the current project. See
+[Non-Azure Deployment Options](docs/NON_AZURE_DEPLOYMENT.md) for the recommended local Streamlit and
+Qdrant Cloud path.
 
 ## Planned production increments
 

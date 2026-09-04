@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
+from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,6 +25,7 @@ class Settings(BaseSettings):
     grounding_min_support_score: float = 0.2
     vector_backend: Literal["sqlite", "qdrant"] = "sqlite"
     qdrant_url: str = "http://localhost:6333"
+    qdrant_api_key: SecretStr | None = None
     qdrant_collection: str = "evidence_rag_chunks"
     qdrant_timeout_seconds: float = 10.0
 

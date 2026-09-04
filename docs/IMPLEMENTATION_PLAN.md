@@ -63,3 +63,4 @@ Windows laptop with 8 GB RAM and a GTX 1650.
 - Expand retrieval evaluation with more PDFs and question types.
 - Add answer faithfulness and citation-correctness evaluation.
 - Add authentication, rate limits, and stronger adversarial PDF tests before public demos.
+- Use the non-Azure deployment path first: local Streamlit plus optional Qdrant Cloud.

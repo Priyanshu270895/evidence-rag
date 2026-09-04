@@ -6,7 +6,7 @@ and an Ollama-hosted language model.
 
 ## Current phase
 
-EvidenceRAG is now in the measured local RAG baseline phase:
+EvidenceRAG is now in the local production portfolio phase:
 
 - Phase 0 complete: FastAPI, PDF ingestion, chunking, embeddings, SQLite FTS5, vector search,
   reciprocal-rank fusion, Ollama generation, grounded fallback, and tests.
@@ -14,6 +14,11 @@ EvidenceRAG is now in the measured local RAG baseline phase:
   deletion, reindexing, chunk inspection, upload size limits, and richer health checks.
 - Phase 2 complete: retrieval evaluation dataset, Recall@K, Precision@K, MRR, nDCG, and a CLI
   report for measuring retrieval quality before adding reranking.
+- Phase 3 complete: grounded-answer metadata, citation validation, prompt-injection checks,
+  structured logs, request IDs, latency reporting, retry settings, Streamlit UI, and GitHub Actions
+  CI.
+- Phase 4 complete: optional Docker Compose, optional Qdrant vector backend, Docker build assets,
+  and Azure deployment design.
 
 ## Why this is not a toy chatbot
 
@@ -21,12 +26,14 @@ EvidenceRAG is now in the measured local RAG baseline phase:
 - Combines dense and keyword retrieval
 - Returns inspectable evidence even when generation is unavailable
 - Refuses unsupported questions
+- Adds grounding metadata, request IDs, latency measurements, and structured logs
+- Includes retrieval evaluation before retrieval optimizations
 - Persists data locally without a paid API
 - Includes typed API contracts and automated tests
 
 ## Laptop-friendly setup (Windows, 8 GB RAM)
 
-Install Python 3.12, Git, and Ollama. Docker is **not required** for Phase 1.
+Install Python 3.12, Git, and Ollama. Docker is optional and not required for normal local use.
 
 ```powershell
 git clone https://github.com/Priyanshu270895/evidence-rag.git
@@ -73,12 +80,15 @@ chunking settings used to build its index. If the same PDF is uploaded again, Ev
 the existing document and skips duplicate embedding work.
 
 Chunks belong to a document ID and keep page-level metadata. Answers return citations containing
-`document_id`, filename, page number, chunk ID, excerpt, and retrieval score.
+`document_id`, filename, page number, chunk ID, excerpt, and retrieval score. Ask responses also
+include grounding metadata with answer status, cited source indexes, invalid source indexes, prompt
+injection risk, warnings, endpoint latency, and request ID.
 
 ## Architecture
 
 ```text
 FastAPI routes
+  -> request-ID middleware and structured JSON logs
   -> Pydantic request/response schemas
   -> RAG service layer
   -> PDF parsing and chunking
@@ -86,7 +96,8 @@ FastAPI routes
   -> SQLite document/chunk store
   -> vector search + SQLite FTS5 keyword search
   -> reciprocal-rank fusion
-  -> Ollama grounded generation
+  -> Ollama grounded generation with retries
+  -> citation and support checks
   -> cited answer response
 ```
 
@@ -124,14 +135,52 @@ The evaluator reports:
 This gives EvidenceRAG a measurable baseline. Reranking, query rewriting, and chunking changes
 should improve these numbers before they are considered useful.
 
+## Streamlit UI
+
+The UI is optional:
+
+```powershell
+pip install -e ".[dev,ui]"
+streamlit run ui/streamlit_app.py
+```
+
+Keep the FastAPI server running separately. The UI lets you upload PDFs, inspect indexed documents,
+ask questions, and review citations.
+
+## Optional Docker and Qdrant
+
+The Python local workflow remains the default. After Docker Desktop is installed, you can run the
+containerized stack:
+
+```powershell
+docker compose up --build
+docker compose exec ollama ollama pull qwen2.5:1.5b
+```
+
+Docker Compose starts:
+
+- `api`: FastAPI EvidenceRAG container
+- `qdrant`: optional vector database backend
+- `ollama`: local model serving container
+
+The local `.env.example` defaults to `VECTOR_BACKEND=sqlite`. Docker Compose sets
+`VECTOR_BACKEND=qdrant` so vector search can move from SQLite brute force to Qdrant without changing
+the API contract.
+
+## Azure deployment
+
+See [Azure Deployment Track](docs/AZURE_DEPLOYMENT.md) for the Phase 4 deployment design using
+Azure Container Registry, Azure Container Apps, persistent storage, Qdrant planning, and Ollama
+deployment constraints.
+
 ## Planned production increments
 
 1. Cross-encoder reranking and chunking experiments guided by evaluation metrics
-2. Stronger refusal behavior, citation correctness checks, and prompt-injection defenses
-3. Streamlit UI, structured logs, request IDs, latency metrics, and GitHub Actions CI
-4. Docker Compose with Qdrant and Azure deployment after the local version is reliable
+2. Larger evaluation dataset with answer faithfulness and citation-correctness scoring
+3. Authentication, rate limits, and stronger adversarial PDF testing
+4. Azure implementation with real credentials, cost controls, image pinning, and monitoring
 
 ## Safety
 
-Use public or personally owned documents only. Uploaded PDFs and embeddings stay on the local
-machine in this version.
+Use public or personally owned documents only. Uploaded PDFs, embeddings, databases, secrets,
+virtual environments, caches, and generated model files must not be committed.

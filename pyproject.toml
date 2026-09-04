@@ -17,6 +17,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=8.3,<9", "ruff>=0.9,<1"]
+qdrant = ["qdrant-client>=1.12,<2"]
+ui = ["streamlit>=1.41,<2"]
 
 [build-system]
 requires = ["setuptools>=69", "wheel"]

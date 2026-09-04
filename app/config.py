@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -16,6 +17,15 @@ class Settings(BaseSettings):
     chunk_overlap: int = 120
     max_upload_bytes: int = 25 * 1024 * 1024
     top_k: int = 5
+    log_level: str = "INFO"
+    ollama_timeout_seconds: float = 120.0
+    ollama_max_retries: int = 1
+    ollama_retry_backoff_seconds: float = 0.5
+    grounding_min_support_score: float = 0.2
+    vector_backend: Literal["sqlite", "qdrant"] = "sqlite"
+    qdrant_url: str = "http://localhost:6333"
+    qdrant_collection: str = "evidence_rag_chunks"
+    qdrant_timeout_seconds: float = 10.0
 
 
 settings = Settings()

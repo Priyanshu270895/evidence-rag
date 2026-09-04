@@ -1,0 +1,17 @@
+.git
+.github
+.venv
+__pycache__
+.pytest_cache
+.ruff_cache
+.cache
+.env
+data
+models
+*.db
+*.db-*
+*.sqlite*
+*.docx
+*.pt
+*.bin
+*.safetensors

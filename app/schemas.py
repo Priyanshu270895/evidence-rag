@@ -31,9 +31,21 @@ class AskRequest(BaseModel):
     document_ids: list[str] | None = None
 
 
+class GroundingReport(BaseModel):
+    status: str
+    cited_source_indexes: list[int]
+    invalid_source_indexes: list[int]
+    support_score: float
+    prompt_injection_risk: bool
+    warnings: list[str]
+
+
 class AskResponse(BaseModel):
     answer: str
     citations: list[Citation]
+    grounding: GroundingReport
+    request_id: str
+    latency_ms: float
 
 
 class IngestResponse(DocumentSummary):

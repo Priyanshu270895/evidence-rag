@@ -4,7 +4,7 @@ EvidenceRAG is a local-first, domain-neutral RAG system for PDFs with page-level
 The goal is to demonstrate production engineering judgment while staying practical on a
 Windows laptop with 8 GB RAM and a GTX 1650.
 
-## Current Phase: Reranking And Safety Hardening
+## Current Phase: Reranking, Evaluation Expansion, And Deployment Validation
 
 - Use Python 3.12 in a local virtual environment.
 - Keep the pipeline transparent before adding orchestration frameworks.
@@ -42,14 +42,24 @@ Windows laptop with 8 GB RAM and a GTX 1650.
 
 ## Phase 3: Grounding, Observability, And UX
 
-- Add answer faithfulness checks and citation correctness checks.
-- Add structured logs, request IDs, latency measurements, and retry policies.
-- Add prompt-injection filtering and evidence-only answer constraints.
-- Build a Streamlit UI for upload, search, answer display, and citation inspection.
-- Add GitHub Actions CI.
+- Complete: answer support scoring and citation source-index validation.
+- Complete: structured JSON logs, request IDs, latency measurements, and retry settings.
+- Complete: prompt-injection checks for questions and retrieved evidence.
+- Complete: evidence-only prompt constraints that treat document text as untrusted data.
+- Complete: Streamlit UI for upload, document inspection, questions, and citation review.
+- Complete: GitHub Actions CI for formatting, linting, and tests on Python 3.12.
 
 ## Phase 4: Later Deployment Track
 
-- Add Docker Compose only after local validation.
-- Move vector storage to Qdrant when the SQLite baseline is measured.
-- Design and implement Azure deployment once local quality and resource needs are known.
+- Complete: optional Dockerfile and Docker Compose stack for API, Qdrant, and Ollama.
+- Complete: optional Qdrant vector backend behind `VECTOR_BACKEND=qdrant`.
+- Complete: SQLite remains the default local vector backend.
+- Complete: Azure deployment design for Container Registry, Container Apps, persistent storage,
+  vector storage, and Ollama constraints.
+
+## Phase 5: Next Quality Track
+
+- Add cross-encoder reranking with a small model suitable for CPU or 4 GB VRAM.
+- Expand retrieval evaluation with more PDFs and question types.
+- Add answer faithfulness and citation-correctness evaluation.
+- Add authentication, rate limits, and stronger adversarial PDF tests before public demos.

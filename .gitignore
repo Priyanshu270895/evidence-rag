@@ -16,3 +16,6 @@ models/
 *.pt
 *.bin
 *.safetensors
+
+# Personal interview-preparation documents stay local.
+docs/*.docx

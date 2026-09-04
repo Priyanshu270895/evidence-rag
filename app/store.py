@@ -54,6 +54,17 @@ class ChunkStore:
                 text TEXT NOT NULL,
                 embedding TEXT NOT NULL
             );
+            """
+        )
+        schema_changed = self._migrate_legacy_chunks()
+        fts_exists = (
+            self.connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'chunks_fts'"
+            ).fetchone()
+            is not None
+        )
+        self.connection.executescript(
+            """
 
             CREATE INDEX IF NOT EXISTS idx_documents_file_hash ON documents(file_hash);
             CREATE INDEX IF NOT EXISTS idx_chunks_document_id ON chunks(document_id);
@@ -76,16 +87,21 @@ class ChunkStore:
             END;
             """
         )
-        self._migrate_legacy_chunks()
+        if schema_changed or not fts_exists:
+            self.connection.execute("INSERT INTO chunks_fts(chunks_fts) VALUES('rebuild')")
+            self.connection.commit()
 
-    def _migrate_legacy_chunks(self) -> None:
+    def _migrate_legacy_chunks(self) -> bool:
+        changed = False
         columns = self._table_columns("chunks")
         if not columns:
-            return
+            return changed
         if "document_id" not in columns:
             self.connection.execute("ALTER TABLE chunks ADD COLUMN document_id TEXT")
+            changed = True
         if "chunk_index" not in columns:
             self.connection.execute("ALTER TABLE chunks ADD COLUMN chunk_index INTEGER DEFAULT 0")
+            changed = True
 
         legacy_rows = self.connection.execute(
             """
@@ -96,6 +112,7 @@ class ChunkStore:
             """
         ).fetchall()
         for row in legacy_rows:
+            changed = True
             document_id = legacy_document_id(row["document"])
             timestamp = utc_now()
             self.connection.execute(
@@ -125,7 +142,9 @@ class ChunkStore:
                 "UPDATE chunks SET document_id = ? WHERE document = ?",
                 (document_id, row["document"]),
             )
-        self.connection.commit()
+        if changed:
+            self.connection.commit()
+        return changed
 
     def _table_columns(self, table_name: str) -> set[str]:
         rows = self.connection.execute(f"PRAGMA table_info({table_name})").fetchall()

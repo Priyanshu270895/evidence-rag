@@ -1,3 +1,5 @@
+import sqlite3
+
 from app.store import ChunkStore, utc_now
 
 
@@ -66,3 +68,33 @@ def test_replacing_document_rebuilds_document_chunks(tmp_path):
 
     assert store.keyword_search("alpha", limit=5) == []
     assert store.keyword_search("beta", limit=5) == ["chunk-1"]
+
+
+def test_migrates_phase_zero_chunk_schema_before_creating_indexes(tmp_path):
+    database_path = tmp_path / "legacy.db"
+    connection = sqlite3.connect(database_path)
+    connection.execute(
+        """
+        CREATE TABLE chunks (
+            id TEXT PRIMARY KEY,
+            document TEXT NOT NULL,
+            page INTEGER NOT NULL,
+            text TEXT NOT NULL,
+            embedding TEXT NOT NULL
+        )
+        """
+    )
+    connection.execute(
+        "INSERT INTO chunks(id, document, page, text, embedding) VALUES(?,?,?,?,?)",
+        ("legacy-chunk", "legacy.pdf", 2, "legacy alpha text", "[1.0, 0.0]"),
+    )
+    connection.commit()
+    connection.close()
+
+    store = ChunkStore(database_path)
+
+    documents = store.list_documents()
+    assert len(documents) == 1
+    assert documents[0]["filename"] == "legacy.pdf"
+    assert documents[0]["status"] == "legacy"
+    assert store.keyword_search("legacy", limit=5) == ["legacy-chunk"]

@@ -1,0 +1,2 @@
+{"question":"What text is shown in the dummy PDF file?","relevant":[{"document":"evidence-rag-smoke.pdf","page":1,"contains":"Dummy PDF file"}],"notes":"Upload the W3C dummy PDF as evidence-rag-smoke.pdf before running this example."}
+{"question":"Find the page that contains the phrase Dummy PDF file.","relevant":[{"document":"evidence-rag-smoke.pdf","page":1,"contains":"Dummy PDF file"}],"notes":"This evaluates retrieval only; answer generation is measured separately later."}

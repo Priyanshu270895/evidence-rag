@@ -4,13 +4,13 @@ EvidenceRAG is a local-first, domain-neutral RAG system for PDFs with page-level
 The goal is to demonstrate production engineering judgment while staying practical on a
 Windows laptop with 8 GB RAM and a GTX 1650.
 
-## Current Phase: Retrieval Evaluation
+## Current Phase: Reranking And Safety Hardening
 
 - Use Python 3.12 in a local virtual environment.
 - Keep the pipeline transparent before adding orchestration frameworks.
 - Validate formatting, linting, tests, app startup, ingestion, retrieval, and generation locally.
 - Avoid committing virtual environments, databases, uploaded PDFs, model weights, caches, or secrets.
-- Use evaluation metrics before adding reranking or query rewriting.
+- Use evaluation metrics before accepting reranking, query rewriting, or chunking changes.
 
 ## Review Findings
 
@@ -34,10 +34,11 @@ Windows laptop with 8 GB RAM and a GTX 1650.
 
 ## Phase 2: Retrieval Quality
 
-- Add a small evaluation dataset with questions, relevant documents, relevant pages, and expected citations.
-- Report Recall@K, Precision@K, MRR, and nDCG.
-- Add cross-encoder reranking with a small model suitable for CPU or 4 GB VRAM.
-- Add query rewriting only when evaluation shows it helps.
+- Complete: small JSONL evaluation dataset with questions and relevant evidence labels.
+- Complete: Recall@K, Precision@K, MRR, and nDCG metric implementation.
+- Complete: command-line evaluation report for local retrieval experiments.
+- Next: add cross-encoder reranking with a small model suitable for CPU or 4 GB VRAM.
+- Next: add query rewriting only when evaluation shows it helps.
 
 ## Phase 3: Grounding, Observability, And UX
 

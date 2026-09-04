@@ -6,13 +6,14 @@ and an Ollama-hosted language model.
 
 ## Current phase
 
-EvidenceRAG is now in the local production baseline phase:
+EvidenceRAG is now in the measured local RAG baseline phase:
 
 - Phase 0 complete: FastAPI, PDF ingestion, chunking, embeddings, SQLite FTS5, vector search,
   reciprocal-rank fusion, Ollama generation, grounded fallback, and tests.
 - Phase 1 complete: document IDs, document metadata, duplicate detection by file hash, document
   deletion, reindexing, chunk inspection, upload size limits, and richer health checks.
-- Phase 2 in progress: retrieval evaluation dataset and ranking metrics.
+- Phase 2 complete: retrieval evaluation dataset, Recall@K, Precision@K, MRR, nDCG, and a CLI
+  report for measuring retrieval quality before adding reranking.
 
 ## Why this is not a toy chatbot
 
@@ -49,6 +50,9 @@ uvicorn app.main:app --reload
 
 Open `http://127.0.0.1:8000/docs`, upload a PDF with `POST /documents`, then ask a question
 with `POST /ask`.
+
+For a tiny smoke-test PDF, you can use the public W3C dummy PDF and upload it with the filename
+`evidence-rag-smoke.pdf`.
 
 ## API overview
 
@@ -98,13 +102,34 @@ ruff check .
 pytest
 ```
 
+## Retrieval evaluation
+
+Phase 2 adds a lightweight retrieval evaluator:
+
+```powershell
+python scripts/evaluate_retrieval.py --dataset eval/retrieval_eval.example.jsonl --k 5
+```
+
+The dataset is JSONL. Each line contains a `question` and a list of `relevant` evidence labels.
+Labels can identify evidence by `chunk_id`, `document_id`, `document` or `filename`, `page`, and
+optional `contains` text.
+
+The evaluator reports:
+
+- `Precision@K`: how much of the top K retrieved evidence is relevant.
+- `Recall@K`: how much of the expected evidence was found in the top K.
+- `MRR`: whether the first relevant result appears early.
+- `nDCG@K`: whether relevant results are ranked near the top.
+
+This gives EvidenceRAG a measurable baseline. Reranking, query rewriting, and chunking changes
+should improve these numbers before they are considered useful.
+
 ## Planned production increments
 
-1. Retrieval evaluation set with Recall@K, Precision@K, MRR, nDCG, and per-query reports
-2. Cross-encoder reranking and chunking experiments guided by evaluation metrics
-3. Stronger refusal behavior, citation correctness checks, and prompt-injection defenses
-4. Streamlit UI, structured logs, request IDs, latency metrics, and GitHub Actions CI
-5. Docker Compose with Qdrant and Azure deployment after the local version is reliable
+1. Cross-encoder reranking and chunking experiments guided by evaluation metrics
+2. Stronger refusal behavior, citation correctness checks, and prompt-injection defenses
+3. Streamlit UI, structured logs, request IDs, latency metrics, and GitHub Actions CI
+4. Docker Compose with Qdrant and Azure deployment after the local version is reliable
 
 ## Safety
 
